@@ -77,9 +77,30 @@ void printArray(int A[], int size)
     printf("\n");
 }
 
+int read_file(){
+    FILE * file;
+    file = fopen("data_to_sort.bin","rb");
+    if (file == NULL){
+        printf("File cannot be opened \n");
+        return 0;
+    }
+
+    char record[100];
+    char * record_array[10][100];
+    int records_read = 0;
+    while(fread(record,100,1,file) == 1)
+    {
+        //printf("%s\n", record);
+        //Store record in memory
+        record_array[records_read][0] = record;
+        ++records_read;
+    }
+    fclose(file);
+}
 // Driver code
 int main()
 {
+    read_file();
     int arr[] = { 12, 11, 13, 5, 6, 7 };
     int arr_size = sizeof(arr) / sizeof(arr[0]);
 
