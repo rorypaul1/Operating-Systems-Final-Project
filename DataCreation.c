@@ -6,7 +6,7 @@ int main() {
 
     // Creating a file
     file = fopen("data_to_sort.bin", "w");
-
+    
     // Checking whether file is 
     // created or not
     if (file == NULL) {
@@ -31,7 +31,7 @@ int main() {
         //Randomly generate key
         key = rand() % num_records;
         sprintf(record_to_write,"%i", key);
-
+        printf("Key from data creation: %d\n",key);
         //Write to file
         fwrite(record_to_write, record_size, 1, file);
 

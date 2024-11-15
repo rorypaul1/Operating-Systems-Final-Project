@@ -68,31 +68,54 @@ void mergeSort(int arr[], int l, int r)
     }
 }
 
-// Function to print an array
-void printArray(int A[], int size)
-{
+void createKeyArray(int key_array[10], char records_array[10][100]){
     int i;
-    for (i = 0; i < size; i++)
-        printf("%d ", A[i]);
-    printf("\n");
+    for(i = 0;i < 10;++i){
+        printf("createKeyArray(): %c \n",records_array[i][0]);
+        key_array[i] = (records_array[i][0]-'0');
+    }
+}
+// Function to print an array
+void printArray(char record_array[10][100], int rows, int columns)
+{   
+    int i;
+    int j;
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < columns; j++) {
+            printf("%c ", record_array[i][j]);
+        }
+        printf("\n");
+    }
 }
 
-int read_file(){
+// Function to print an array
+void print1DArray(int arr[], int rows)
+{   
+    int j;
+        for (j = 0; j < rows; j++) {
+            printf("%d ", arr[j]);
+        }
+        printf("\n");
+}
+
+void read_file(char record_array[10][100]){
     FILE * file;
     file = fopen("data_to_sort.bin","rb");
     if (file == NULL){
         printf("File cannot be opened \n");
-        return 0;
+        return;
     }
 
     char record[100];
-    char * record_array[10][100];
     int records_read = 0;
     while(fread(record,100,1,file) == 1)
     {
-        //printf("%s\n", record);
+        printf("%s\n", record);
         //Store record in memory
-        record_array[records_read][0] = record;
+        int j;
+        for(j=0;j<100;++j){
+            record_array[records_read][j]=record[j];
+        }
         ++records_read;
     }
     fclose(file);
@@ -100,16 +123,22 @@ int read_file(){
 // Driver code
 int main()
 {
-    read_file();
-    int arr[] = { 12, 11, 13, 5, 6, 7 };
-    int arr_size = sizeof(arr) / sizeof(arr[0]);
+    char record_array[10][100];
+    int key_array[10];
+    read_file(record_array);
+    int rows = 10;
+    int columns = 100;
+    //int arr[] = { 12, 11, 13, 5, 6, 7 };
+    //int arr_size = sizeof(arr) / sizeof(arr[0]);
 
-    printf("Given array is \n");
-    printArray(arr, arr_size);
+    printf("Given data is \n");
+    printArray(record_array, rows, columns);
 
-    mergeSort(arr, 0, arr_size - 1);
+    createKeyArray(key_array,record_array);
+    
+    mergeSort(key_array, 0, rows - 1);
 
     printf("\nSorted array is \n");
-    printArray(arr, arr_size);
+    print1DArray(key_array, rows);
     return 0;
 }
