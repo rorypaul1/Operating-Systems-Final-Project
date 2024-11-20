@@ -16,14 +16,14 @@ int main() {
     printf("File created.\n");
 
     //Write to the file
-    int num_records = 10;
+    int num_records = 9999;
     int i;
     int record_size = 100;
     int key;
 
     //a char is 1 byte so 100 byte record = 100 bytes
     //key is 4 chars
-    for(i = 0;i < 10; ++i){
+    for(i = 0;i < num_records; ++i){
         //Initialize record to all zeros so we can overwrite with key and data after
         char record_to_write[record_size];
         memset(record_to_write, 0, record_size);

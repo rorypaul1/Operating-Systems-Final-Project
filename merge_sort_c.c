@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <string.h>
-
+#include <sys/stat.h>
 struct thread_data{
     int l;
     int r;
@@ -73,7 +73,6 @@ void *mergeSortParallel(void *thread_arg)
     
     struct thread_data *parallel_data;
     parallel_data = (struct thread_data *) thread_arg;
-    int *arr = (int*)parallel_data->arr;
 
     if (parallel_data->l < parallel_data->r) {
         //find middle
@@ -87,7 +86,7 @@ void *mergeSortParallel(void *thread_arg)
         struct thread_data parallel_data_left;
         parallel_data_left.l = parallel_data->l;
         parallel_data_left.r = m;
-        parallel_data_left.thread_id = thread_id_left;
+        //parallel_data_left.thread_id = thread_id_left;
         parallel_data_left.arr_size = parallel_data->arr_size;
         parallel_data_left.arr = parallel_data->arr;
         
@@ -97,7 +96,7 @@ void *mergeSortParallel(void *thread_arg)
         struct thread_data parallel_data_right;
         parallel_data_right.l = m+1;
         parallel_data_right.r = parallel_data->r;
-        parallel_data_right.thread_id = thread_id_right;
+        //parallel_data_right.thread_id = thread_id_right;
         parallel_data_right.arr = parallel_data->arr;
         pthread_create(&thread_id_right, NULL, mergeSortParallel, (void *)&parallel_data_right);
         pthread_join(thread_id_right, NULL);
@@ -105,6 +104,7 @@ void *mergeSortParallel(void *thread_arg)
 
         merge(parallel_data->arr, parallel_data->l, m, parallel_data->r);
     }
+    return 0;
 }
 
 void mergeSortNotParallel(int arr[], int l, int r)
@@ -121,14 +121,43 @@ void mergeSortNotParallel(int arr[], int l, int r)
     }
 }
 
-void createKeyArray(int key_array[10], char** records_array){
+void createKeyArray(int* key_array, char** records_array, int data_rows){
     int i;
-    for(i = 0;i < 10;++i){
-        key_array[i] = (records_array[i][0]-'0');
+    for(i = 0;i < data_rows;++i){
+        char character_to_int[4];
+        int decimal_of_character;
+        character_to_int[0] = records_array[i][0];
+        character_to_int[1] = records_array[i][1];
+        character_to_int[2] = records_array[i][2];
+        character_to_int[3] = records_array[i][3];
+        sscanf(character_to_int, "%d", &decimal_of_character);
+        key_array[i] = decimal_of_character;
         
     }
 }
-
+/*
+void output_file(char * key_array_parallel, char** records_array, char * output_file, int rows){
+    int i;
+    int j;
+    char* record_array_out[rows];
+    for (i = 0; i < rows; i++)
+        record_array_out[i] = (char*)malloc(100 * sizeof(char));
+    for(i=0;i<rows;++i){
+        for(j=0;j<rows;++j){
+            char character_to_int[4];
+            int decimal_of_character;
+            character_to_int[0] = records_array[j][0];
+            character_to_int[1] = records_array[j][1];
+            character_to_int[2] = records_array[j][2];
+            character_to_int[3] = records_array[j][3];
+            sscanf(character_to_int, "%d", &decimal_of_character);
+            if(key_array_parallel[i]==decimal_of_character){
+                record_array_out[i] = records_array[j];
+            }
+        }
+    }
+}
+*/
 
 void printArray(char **record_array, int rows, int columns)
 {   
@@ -136,9 +165,9 @@ void printArray(char **record_array, int rows, int columns)
     int j;
     for (i = 0; i < rows; i++) {
         for (j = 0; j < columns; j++) {
-            printf("%c ", record_array[i][j]);
+            //printf("%c ", record_array[i][j]);
         }
-        printf("\n");
+        //printf("\n");
     }
 }
 
@@ -164,7 +193,7 @@ void read_file(char** record_array){
     int records_read = 0;
     while(fread(record,100,1,file) == 1)
     {
-        printf("%s\n", record);
+        //printf("Record: %s\n", record);
         //Store record in memory
         int j;
         for(j=0;j<100;++j){
@@ -172,36 +201,42 @@ void read_file(char** record_array){
         }
         ++records_read;
     }
+    printf("File Close\n");
     fclose(file);
 }
 
 int main(int argc, char **argv)
 {
-    int data_rows = atoi(argv[1]);
+    // Enter the input file, and output file with the execution of the program for it to run: ./merge_sort_c data_to_sort.bin output
+    char * input_file = argv[1];
+    char * output_file = argv[2];
+    printf("%s\n",input_file);
+    printf("%s\n",output_file);
+    
+    //Get number of rows
+    struct stat st;
+    stat(input_file, &st);
+    int size = st.st_size;
+    int data_rows = size/100;
+    //return 0;
+    
     int i;
     
-    printf("Data rows: %d \n",data_rows);
-    //char record_array[data_rows][100];
     int c = 100;
 
     char* record_array[data_rows];
-    for (i = 0; i < c; i++)
+    for (i = 0; i < data_rows; i++)
         record_array[i] = (char*)malloc(c * sizeof(char));
 
-    
     int *key_array_non_parallel = (int *)malloc((data_rows*sizeof(int)));
     int *key_array_parallel = (int *)malloc((data_rows*sizeof(int)));
 
     read_file(record_array);
+
     int rows = data_rows;
-    int columns = 100;
 
-    printf("Given data is \n");
-    printf("Test: %c\n",record_array[0][0]);
-    printArray(record_array, rows, columns);
-
-    createKeyArray(key_array_non_parallel,record_array);
-    createKeyArray(key_array_parallel,record_array);
+    createKeyArray(key_array_non_parallel,record_array, data_rows);
+    createKeyArray(key_array_parallel,record_array, data_rows);
     
     //Time non parallel merge sort completion
     time_t start_not_parallel, end_not_parallel;
@@ -228,17 +263,17 @@ int main(int argc, char **argv)
     parallel_data.arr_size = sizeof(key_array_parallel);
     parallel_data.thread_id = 1;
 
-    start_parallel = clock();
+    
 
     //Set address
     parallel_data.arr = key_array_parallel;
-    
+    start_parallel = clock();
     mergeSortParallel(&parallel_data);
     end_parallel = clock();
     time_parallel=(end_parallel-start_parallel); //clocks_per_sec
     
 
-    printf("\nSorted array for parallel merge sort is \n");
+    printf("\nSorted array for parallel merge is \n");
     print1DArray(key_array_parallel, rows);
     printf("Completion time for parallel merge sort: %Lf\n", time_parallel);
 
@@ -249,6 +284,6 @@ int main(int argc, char **argv)
     for(f=0;f<rows;++f){
         free(record_array[f]);
     }
-    //free(record_array);
+    printf("test");
     return 0;
 }
