@@ -135,13 +135,15 @@ void createKeyArray(int* key_array, char** records_array, int data_rows){
         
     }
 }
-/*
-void output_file(char * key_array_parallel, char** records_array, char * output_file, int rows){
+
+void output_file(int * key_array_parallel, char** records_array, char * output_file, int rows){
+    //Using sorted keys combine data with their keys in record_array_out
     int i;
     int j;
+    int m;
     char* record_array_out[rows];
-    for (i = 0; i < rows; i++)
-        record_array_out[i] = (char*)malloc(100 * sizeof(char));
+    for (m = 0; m < rows; m++)
+        record_array_out[m] = (char*)malloc(100 * sizeof(char));
     for(i=0;i<rows;++i){
         for(j=0;j<rows;++j){
             char character_to_int[4];
@@ -152,12 +154,34 @@ void output_file(char * key_array_parallel, char** records_array, char * output_
             character_to_int[3] = records_array[j][3];
             sscanf(character_to_int, "%d", &decimal_of_character);
             if(key_array_parallel[i]==decimal_of_character){
-                record_array_out[i] = records_array[j];
+                int p;
+                for(p = 0; p < 100; ++p){
+                    record_array_out[i][p] = records_array[j][p];
+                }
             }
         }
     }
+    
+   //Write to output file
+   FILE * file;
+    file = fopen(output_file,"wb");
+    if (file == NULL){
+        printf("File cannot be opened \n");
+        return;
+    }
+   int r;
+   int c;
+   for(r = 0; r < rows;++r){
+    for(c = 0; c < 100; ++c){
+        fprintf(file,"%c",record_array_out[r][c]);
+    }
+    fprintf(file, "\n");
+   }
+   fclose(file);
+
+
 }
-*/
+
 
 void printArray(char **record_array, int rows, int columns)
 {   
@@ -165,9 +189,9 @@ void printArray(char **record_array, int rows, int columns)
     int j;
     for (i = 0; i < rows; i++) {
         for (j = 0; j < columns; j++) {
-            //printf("%c ", record_array[i][j]);
+            printf("%c ", record_array[i][j]);
         }
-        //printf("\n");
+        printf("\n");
     }
 }
 
@@ -181,9 +205,9 @@ void print1DArray(int arr[], int rows)
         printf("\n");
 }
 
-void read_file(char** record_array){
+void read_file(char** record_array, char *input_file){
     FILE * file;
-    file = fopen("data_to_sort.bin","rb");
+    file = fopen(input_file,"rb");
     if (file == NULL){
         printf("File cannot be opened \n");
         return;
@@ -209,9 +233,9 @@ int main(int argc, char **argv)
 {
     // Enter the input file, and output file with the execution of the program for it to run: ./merge_sort_c data_to_sort.bin output
     char * input_file = argv[1];
-    char * output_file = argv[2];
+    char * output_file_name = argv[2];
     printf("%s\n",input_file);
-    printf("%s\n",output_file);
+    printf("%s\n",output_file_name);
     
     //Get number of rows
     struct stat st;
@@ -231,7 +255,7 @@ int main(int argc, char **argv)
     int *key_array_non_parallel = (int *)malloc((data_rows*sizeof(int)));
     int *key_array_parallel = (int *)malloc((data_rows*sizeof(int)));
 
-    read_file(record_array);
+    read_file(record_array, input_file);
 
     int rows = data_rows;
 
@@ -277,13 +301,15 @@ int main(int argc, char **argv)
     print1DArray(key_array_parallel, rows);
     printf("Completion time for parallel merge sort: %Lf\n", time_parallel);
 
+    //Output to file
+    output_file(key_array_parallel, record_array, output_file_name, rows);
     //Deallocate Memory
+
     free(key_array_non_parallel);
     free(key_array_parallel);
     int f;
     for(f=0;f<rows;++f){
         free(record_array[f]);
     }
-    printf("test");
     return 0;
 }
