@@ -16,7 +16,7 @@ int main() {
     printf("File created.\n");
 
     //Write to the file
-    int num_records = 9999;
+    int num_records = 999999;
     int i;
     int record_size = 100;
     int key;
