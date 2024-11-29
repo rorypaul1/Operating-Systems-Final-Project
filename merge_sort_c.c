@@ -65,53 +65,8 @@ void merge(int arr[], int l, int m, int r)
     }
 }
 
-// l is for left index and r is right index of the
-// sub-array of arr to be sorted
 
-void *mergeSortParallel(void *thread_arg)
-{
-    
-    struct thread_data *parallel_data;
-    parallel_data = (struct thread_data *) thread_arg;
-    //int m;
-    //int * arr = parallel_data->arr;
-    //printf("ID: %ld, Size: %ld ",pthread_self(), sizeof(parallel_data->arr)/sizeof(int));
-    //for(m=0;m<sizeof(parallel_data->arr);++m){
-      //  printf("%d ",arr[m]);
-    //}
-    //printf(" | ");
-    if (parallel_data->l < parallel_data->r) {
-        //find middle
-        int m = parallel_data->l + (parallel_data->r - parallel_data->l) / 2;
 
-        // Sort first and second halves
-        pthread_t thread_id_left;
-        pthread_t thread_id_right;
-
-        //Left half 
-        struct thread_data parallel_data_left;
-        parallel_data_left.l = parallel_data->l;
-        parallel_data_left.r = m;
-        parallel_data_left.arr_size = parallel_data->arr_size;
-        parallel_data_left.arr = parallel_data->arr;
-        pthread_create(&thread_id_left, NULL, mergeSortParallel, (void *)&parallel_data_left);
-        pthread_join(thread_id_left, NULL);
-        pthread_cancel(thread_id_left);
-        //Right half
-        
-        struct thread_data parallel_data_right;
-        parallel_data_right.l = m+1;
-        parallel_data_right.r = parallel_data->r;
-        parallel_data_right.arr = parallel_data->arr;
-        pthread_create(&thread_id_right, NULL, mergeSortParallel, (void *)&parallel_data_right);
-        pthread_join(thread_id_right, NULL);
-        pthread_cancel(thread_id_right);
-        
-
-        merge(parallel_data->arr, parallel_data->l, m, parallel_data->r);
-    }
-    return 0;
-}
 
 void mergeSortNotParallel(int arr[], int l, int r)
 {
@@ -160,23 +115,6 @@ void createKeyArray(int* key_array, char** records_array, int data_rows){
     }
 }
 
-void createKeyArray6(int* key_array, char** records_array, int data_rows){
-    int i;
-    for(i = 0;i < data_rows;++i){
-        char character_to_int[6];
-        int decimal_of_character;
-        character_to_int[0] = records_array[i][0];
-        character_to_int[1] = records_array[i][1];
-        character_to_int[2] = records_array[i][2];
-        character_to_int[3] = records_array[i][3];
-        character_to_int[4] = records_array[i][4];
-        character_to_int[5] = records_array[i][5];
-        sscanf(character_to_int, "%d", &decimal_of_character);
-        //printf("%d \n",decimal_of_character);
-        key_array[i] = decimal_of_character;
-        
-    }
-}
 void output_file(int * key_array_parallel, char** records_array, char * output_file, int rows){
     //Using sorted keys combine data with their keys in record_array_out
     int i;
@@ -271,7 +209,11 @@ void read_file(char** record_array, char *input_file){
         int j;
         for(j=0;j<100;++j){
             record_array[records_read][j]=record[j];
-
+            int j;
+            for(j=0;j<100;++j){
+                printf("%d",record[j]);
+            }
+            printf("\n");
         }
         ++records_read;
     }
@@ -293,11 +235,6 @@ int main(int argc, char **argv)
     stat(input_file, &st);
     int size = st.st_size;
     int data_rows = size/100;
-    printf("Rows: %d",data_rows);
-    struct stat st6;
-    stat("data_to_sort6.bin", &st6);
-    int size6 = st6.st_size;
-    int data_rows6 = size6/100;
     
     int i;
     
@@ -307,19 +244,20 @@ int main(int argc, char **argv)
     for (i = 0; i < data_rows; i++)
         record_array[i] = (char*)malloc(c * sizeof(char));
 
-    char* record_array6[data_rows6];
-    for (i = 0; i < data_rows6; i++)
-        record_array6[i] = (char*)malloc(c * sizeof(char));
+    char* output_record_array[data_rows];
+    for (i = 0; i < data_rows; i++)
+        output_record_array[i] = (char*)malloc(c * sizeof(char));
 
     int *key_array_non_parallel = (int *)malloc((data_rows*sizeof(int)));
     int *key_array_parallel = (int *)malloc((data_rows*sizeof(int)));
-    int *key_array_parallel_six = (int *)malloc((data_rows6*sizeof(int)));
+    int *key_array_parallel_four = (int *)malloc((data_rows*sizeof(int)));
+    int *output_key_array = (int *)malloc((data_rows*sizeof(int)));
     read_file(record_array, input_file);
-    read_file(record_array6, "data_to_sort6.bin");
+    
     int rows = data_rows;
     createKeyArray(key_array_non_parallel,record_array, data_rows);
     createKeyArray(key_array_parallel,record_array, data_rows);
-    createKeyArray6(key_array_parallel_six,record_array6, data_rows6);
+    createKeyArray(key_array_parallel_four,record_array, data_rows);
     //Time non parallel merge sort completion
     time_t start_not_parallel, end_not_parallel;
     long double time_not_parallel;
@@ -327,19 +265,19 @@ int main(int argc, char **argv)
     //after the user defined function does its work
     mergeSortNotParallel(key_array_non_parallel, 0, rows - 1);
     end_not_parallel = clock();
-    time_not_parallel=(end_not_parallel-start_not_parallel); //clocks_per_sec
+    time_not_parallel=(double)(end_not_parallel-start_not_parallel)/CLOCKS_PER_SEC; //clocks_per_sec
     
 
     printf("\nSorted array of non parallel is \n");
     print1DArray(key_array_non_parallel, rows);
     printf("Completion time for non parallel merge sort: %Lf\n", time_not_parallel);
 
-    time_t start_parallel, end_parallel;
-    long double time_parallel;
-    start_parallel = clock();
-    //2 Threads
-    //Do first split manually
-    //find middle
+    //2 THREADS
+        time_t start_parallel, end_parallel;
+        long double time_parallel;
+        start_parallel = clock();
+    
+    
         int m = (rows-1) / 2;
 
         // Sort first and second halves
@@ -350,7 +288,7 @@ int main(int argc, char **argv)
         struct thread_data parallel_data_left;
         parallel_data_left.l = 0;
         parallel_data_left.r = m;
-        //parallel_data_left.arr_size = parallel_data->arr_size;
+        
         parallel_data_left.arr = key_array_parallel;
         pthread_create(&thread_id_left, NULL, mergeSortParallelPre, (void *)&parallel_data_left);
         pthread_join(thread_id_left, NULL);
@@ -366,55 +304,90 @@ int main(int argc, char **argv)
         pthread_cancel(thread_id_right);
 
         end_parallel = clock();
-        time_parallel=(end_parallel-start_parallel); //clocks_per_sec
+        time_parallel=(double)(end_parallel-start_parallel)/CLOCKS_PER_SEC; //clocks_per_sec
     
 
-    printf("\nSorted array for parallel merge is \n");
+    //printf("\nSorted array for parallel merge is \n");
     print1DArray(key_array_parallel, rows);
-    printf("Completion time for parallel merge sort: %Lf\n", time_parallel);
+    printf("Completion time for parallel merge sort (2 threads): %Lf\n", time_parallel);
     
-    
-
     //Output to file
     output_file(key_array_parallel, record_array, output_file_name, rows);
-
- /*
-    //Time parallel merge sort completion 6 byte key
-    time_t start_parallel6, end_parallel6;
-    long double time_parallel6;
+    read_file(output_record_array,output_file_name);
+    createKeyArray(output_key_array,output_record_array,data_rows);
+    //4 THREADS
+        time_t start_parallel_four, end_parallel_four;
+        long double time_parallel_four;
+        start_parallel_four = clock();
     
-    //after the user defined function does its work
-   
-    struct thread_data parallel_data6;
-    parallel_data6.l = 0;
-    parallel_data6.r = data_rows6-1;
-    parallel_data6.arr_size = sizeof(key_array_parallel_six);
-
-    //Set address
-    parallel_data6.arr = key_array_parallel_six;
-    start_parallel6 = clock();
-    //mergeSortParallel(&parallel_data6);
-    end_parallel6 = clock();
-    time_parallel6=(end_parallel6-start_parallel6); //clocks_per_sec
     
-*/
-    //printf("\nSorted array for parallel merge is \n");
-    //print1DArray(key_array_parallel_six, rows);
-    //printf("Completion time for parallel merge sort (6 byte key): %Lf\n", time_parallel6);
+        int m_initial = (rows-1) / 2;
+        int left_m = m_initial / 2;
+        int right_m = m_initial + ((rows-1) - m_initial) / 2;
+        // Sort first and second halves
+        pthread_t thread_id_left_one;
+        pthread_t thread_id_left_two;
+        pthread_t thread_id_right_one;
+        pthread_t thread_id_right_two;
+
+        //Left half 
+        struct thread_data parallel_data_left_one;
+        parallel_data_left_one.l = 0;
+        parallel_data_left_one.r = left_m;
+        
+        parallel_data_left_one.arr = key_array_parallel_four;
+        pthread_create(&thread_id_left_one, NULL, mergeSortParallelPre, (void *)&parallel_data_left_one);
+        pthread_join(thread_id_left_one, NULL);
+        pthread_cancel(thread_id_left_one);
+
+        struct thread_data parallel_data_left_two;
+        parallel_data_left_two.l = left_m+1;
+        parallel_data_left_two.r = m;
+        
+        parallel_data_left_two.arr = key_array_parallel_four;
+        pthread_create(&thread_id_left_two, NULL, mergeSortParallelPre, (void *)&parallel_data_left_two);
+        pthread_join(thread_id_left_two, NULL);
+        pthread_cancel(thread_id_left_two);
+
+        //Right half
+        
+        struct thread_data parallel_data_right_one;
+        parallel_data_right_one.l = m+1;
+        parallel_data_right_one.r = right_m;
+        parallel_data_right_one.arr = key_array_parallel_four;
+        pthread_create(&thread_id_right_one, NULL, mergeSortParallelPre, (void *)&parallel_data_right_one);
+        pthread_join(thread_id_right_one, NULL);
+        pthread_cancel(thread_id_right_one);
+
+        struct thread_data parallel_data_right_two;
+        parallel_data_right_two.l = right_m + 1;
+        parallel_data_right_two.r = rows;
+        parallel_data_right_two.arr = key_array_parallel_four;
+        pthread_create(&thread_id_right_two, NULL, mergeSortParallelPre, (void *)&parallel_data_right_two);
+        pthread_join(thread_id_right_two, NULL);
+        pthread_cancel(thread_id_right_two);
+
+        end_parallel_four = clock();
+        time_parallel_four=(double) (end_parallel_four-start_parallel_four)/CLOCKS_PER_SEC; //clocks_per_sec
+    
 
     
+    printf("Completion time for parallel merge sort (4 threads): %Lf\n", time_parallel_four);
+    
+    printf("Checking output file\n");
+    print1DArray(output_key_array, rows);
     //Deallocate Memory
 
     free(key_array_non_parallel);
     free(key_array_parallel);
-    free(key_array_parallel_six);
+    free(key_array_parallel_four);
     int f;
     for(f=0;f<rows;++f){
         free(record_array[f]);
     }
     int g;
     for(g=0;g<rows;++g){
-        free(record_array6[g]);
+        free(output_record_array[g]);
     }
     return 0;
 }
