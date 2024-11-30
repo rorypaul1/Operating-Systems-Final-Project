@@ -120,6 +120,7 @@ void output_file(int * key_array_parallel, char** records_array, char * output_f
     int i;
     int j;
     int m;
+    
     char* record_array_out[rows];
     for (m = 0; m < rows; m++)
         record_array_out[m] = (char*)malloc(100 * sizeof(char));
@@ -133,18 +134,20 @@ void output_file(int * key_array_parallel, char** records_array, char * output_f
             character_to_int[2] = records_array[j][2];
             character_to_int[3] = records_array[j][3];
             sscanf(character_to_int, "%d", &decimal_of_character);
-            if(key_array_parallel[i]==decimal_of_character){
+            //printf("%d \n",decimal_of_character);
+           if(key_array_parallel[i]==decimal_of_character){
                 int p;
+                //printf("Match: %d | %d \n",key_array_parallel[i], decimal_of_character);
                 for(p = 0; p < 100; ++p){
-                    record_array_out[i][p] = records_array[j][p];
+                   record_array_out[i][p] = records_array[j][p];
                 }
-            }
+           }
         }
     }
-    
+
    //Write to output file
    FILE * file;
-    file = fopen(output_file,"wb");
+    file = fopen(output_file,"w");
     if (file == NULL){
         printf("File cannot be opened \n");
         return;
@@ -155,10 +158,9 @@ void output_file(int * key_array_parallel, char** records_array, char * output_f
     for(c = 0; c < 100; ++c){
         fprintf(file,"%c",record_array_out[r][c]);
     }
-    fprintf(file, "\n");
+    
    }
    fclose(file);
-
 
 }
 
@@ -180,7 +182,7 @@ void print1DArray(int arr[], int rows)
 {   
     int j;
         for (j = 0; j < rows; j++) {
-            printf("%d ", arr[j]);
+            printf( " %d ", arr[j]);
         }
         printf("\n");
 }
@@ -209,11 +211,11 @@ void read_file(char** record_array, char *input_file){
         int j;
         for(j=0;j<100;++j){
             record_array[records_read][j]=record[j];
-            int j;
-            for(j=0;j<100;++j){
-                printf("%d",record[j]);
-            }
-            printf("\n");
+           // int j;
+            //for(j=0;j<100;++j){
+              //  printf("%d",record[j]);
+           // }
+           // printf("\n");
         }
         ++records_read;
     }
@@ -262,6 +264,7 @@ int main(int argc, char **argv)
     time_t start_not_parallel, end_not_parallel;
     long double time_not_parallel;
     start_not_parallel = clock();
+
     //after the user defined function does its work
     mergeSortNotParallel(key_array_non_parallel, 0, rows - 1);
     end_not_parallel = clock();
@@ -303,11 +306,12 @@ int main(int argc, char **argv)
         pthread_join(thread_id_right, NULL);
         pthread_cancel(thread_id_right);
 
+        merge(key_array_parallel, 0, m, data_rows);
         end_parallel = clock();
         time_parallel=(double)(end_parallel-start_parallel)/CLOCKS_PER_SEC; //clocks_per_sec
     
 
-    //printf("\nSorted array for parallel merge is \n");
+    printf("\nSorted array for parallel merge is \n");
     print1DArray(key_array_parallel, rows);
     printf("Completion time for parallel merge sort (2 threads): %Lf\n", time_parallel);
     
@@ -349,6 +353,7 @@ int main(int argc, char **argv)
         pthread_join(thread_id_left_two, NULL);
         pthread_cancel(thread_id_left_two);
 
+        
         //Right half
         
         struct thread_data parallel_data_right_one;
@@ -367,15 +372,20 @@ int main(int argc, char **argv)
         pthread_join(thread_id_right_two, NULL);
         pthread_cancel(thread_id_right_two);
 
+        merge(key_array_parallel_four, 0, left_m, m_initial);
+        merge(key_array_parallel_four, m_initial+1, right_m, data_rows);
+
+        merge(key_array_parallel_four, 0, m_initial, data_rows);
         end_parallel_four = clock();
         time_parallel_four=(double) (end_parallel_four-start_parallel_four)/CLOCKS_PER_SEC; //clocks_per_sec
     
 
     
     printf("Completion time for parallel merge sort (4 threads): %Lf\n", time_parallel_four);
-    
-    printf("Checking output file\n");
-    print1DArray(output_key_array, rows);
+    //print1DArray(key_array_parallel_four, rows);
+    //printf("Checking output file\n");
+
+    //print1DArray(output_key_array, rows);
     //Deallocate Memory
 
     free(key_array_non_parallel);
