@@ -117,6 +117,7 @@ void createKeyArray(int* key_array, char** records_array, int data_rows){
 
 void output_file(int * key_array_parallel, char** records_array, char * output_file, int rows){
     //Using sorted keys combine data with their keys in record_array_out
+    printf("Outputting sorted data to file...\n");
     int i;
     int j;
     int m;

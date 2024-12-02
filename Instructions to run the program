@@ -1,0 +1,3 @@
+To compile the program: gcc merge_sort_c.c -Wall -Werror -pthread -o merge_sort_c
+
+To run the program: ./merge_sort_c data_to_sort4.bin output_file.bin
